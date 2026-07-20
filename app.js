@@ -22,6 +22,7 @@ const upload = multer({ storage: storage });
 
 
 //Database
+<<<<<<< HEAD
 const db = mysql.createConnection({
     host: 'c237-hannah-mysql.mysql.database.azure.com',
     user: 'c237_024',
@@ -38,6 +39,9 @@ db.connect((err) => {
     }
     console.log('Connected to database');
 });
+=======
+
+>>>>>>> b5b9446 (Added job , applicant list and partial navbar)
 
 
 // Set up view engine
@@ -49,6 +53,7 @@ app.use(express.urlencoded({
     extended: false
 }));
 
+<<<<<<< HEAD
 // Session Middleware(Xanthus)
 
 app.use(session({
@@ -153,6 +158,8 @@ app.get('/logout', (req, res) => {
     req.session.destroy();
     res.redirect('/login');
 });
+=======
+>>>>>>> b5b9446 (Added job , applicant list and partial navbar)
 
 // In-memory data for applicants
 let applicant = [
