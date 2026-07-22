@@ -22,7 +22,22 @@ const upload = multer({ storage: storage });
 
 
 //Database
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'RP738964$',
+    database: 'c237_worklah',
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
 
+db.connect((err) => {
+    if (err) {
+        throw err;
+    }
+    console.log('Connected to database');
+});
 
 
 // Set up view engine
@@ -34,6 +49,115 @@ app.use(express.urlencoded({
     extended: false
 }));
 
+// Session Middleware(Xanthus)
+
+app.use(session({
+    secret: 'secret',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 }
+}));
+
+app.use(flash());
+
+
+
+const checkAuthenticated = (req, res, next) => {
+    if (req.session.user) {
+        return next();
+    } else {
+        req.flash('error', 'Please log in to view this resource');
+        res.redirect('/login');
+    }
+};
+
+const checkAdmin = (req, res, next) => {
+    if (req.session.user.role === 'admin') {
+        return next();
+    } else {
+        req.flash('error', 'Access denied');
+        res.redirect('/dashboard');
+    }
+};
+
+//index route
+app.get('/', (req, res) => {
+    res.render('index', { user: req.session.user, messages: req.flash('success') });
+});
+
+//Routes for registration and login(Xanthus)
+
+app.get('/register', (req, res) => {
+    res.render('register', { messages: req.flash('error'), formData: req.flash('formData')[0] });
+});
+
+const validateRegistration = (req, res, next) => {
+    const { username, email, password, address, contact } = req.body;
+
+    if (!username || !email || !password || !address || !contact) {
+        return res.status(400).send('All fields are required.');
+    }
+    if (password.length < 6) {
+        req.flash('error', 'Password should be at least 6 or more characters long');
+        req.flash('formData', req.body);
+        return res.redirect('/register');
+    }
+    next();
+};
+
+app.post('/register', validateRegistration, (req, res) => {
+    const { username, email, password, address, contact, role } = req.body;
+
+    const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
+    db.query(sql, [username, email, password, address, contact, role], (err, result) => {
+        if (err) throw err;
+        req.flash('success', 'Registration successful! Please log in.');
+        res.redirect('/login');
+    });
+});
+
+app.get('/login', (req, res) => {
+    res.render('login', {
+        messages: req.flash('success'),
+        errors: req.flash('error')
+    });
+});
+
+app.post('/login', (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        req.flash('error', 'All fields are required.');
+        return res.redirect('/login');
+    }
+
+    const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
+    db.query(sql, [email, password], (err, results) => {
+        if (err) throw err;
+
+        if (results.length > 0) {
+            req.session.user = results[0];
+            req.flash('success', 'Login successful!');
+            res.redirect('/dashboard');
+        } else {
+            req.flash('error', 'Invalid email or password.');
+            res.redirect('/login');
+        }
+    });
+});
+
+app.get('/dashboard', checkAuthenticated, (req, res) => {
+    res.render('dashboard', { user: req.session.user });
+});
+
+app.get('/admin', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('admin', { user: req.session.user });
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
+});
 
 // In-memory data for applicants
 let applicant = [
@@ -70,13 +194,15 @@ app.get('/applicant/:id', function(req, res) {
     // Extracting the 'id' parameter from the request parameters and converting it to an integer
     const applicantId = parseInt(req.params.id);
     // Searching for a applicant in the 'applicants' array with a matching 'id'
-    const applicant = applicant.find((applicant) => applicant.id === applicantId);
+    const foundapplicant = applicant.find((applicant) => applicant.id === applicantId);
 
     // Checking if a applicant with the specified 'id' was found
-    if (applicant) {
+    if (foundapplicant) {
         //If the applicant is found, render a view called "applicantInfo" and pass the variable 'applicants' to the view for rendering.
-        res.render('applicantInfo', { applicant })
-    } 
+        res.render('applicantInfo', { applicant: foundapplicant });
+    } else {
+        res.status(404).send('Applicant not found');
+    }
 });
 
 // Route to retrieve and display all job
@@ -89,14 +215,16 @@ app.get('/joblist', function(req, res) {
 app.get('/job/:id', function(req, res) {
     // Extracting the 'id' parameter from the request parameters and converting it to an integer
     const jobId = parseInt(req.params.id);
-    // Searching for a applicant in the 'job' array with a matching 'id'
-    const job = job.find((job) => job.id === jobId);
+    // Searching for a job in the 'job' array with a matching 'id'
+    const foundJob = job.find((job) => job.id === jobId);
 
-    // Checking if a applicant with the specified 'id' was found
-    if (job) {
-        //If the applicant is found, render a view called "applicantInfo" and pass the variable 'applicants' to the view for rendering.
-        res.render('jobInfo', { job })
-    } 
+    // Checking if a job with the specified 'id' was found
+    if (foundJob) {
+        //If the job is found, render a view called "jobInfo" and pass the variable 'job' to the view for rendering.
+        res.render('jobInfo', { job: foundJob });
+    } else {
+        res.status(404).send('Job not found');
+    }
 });
 
 // Route to home.ejs 
