@@ -80,6 +80,11 @@ const checkAdmin = (req, res, next) => {
     }
 };
 
+//index route
+app.get('/', (req, res) => {
+    res.render('index', { user: req.session.user, messages: req.flash('success') });
+});
+
 //Routes for registration and login(Xanthus)
 
 app.get('/register', (req, res) => {
