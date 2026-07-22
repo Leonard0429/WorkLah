@@ -24,10 +24,10 @@ const upload = multer({ storage: storage });
 //Database
 <<<<<<< HEAD
 const db = mysql.createConnection({
-    host: 'c237-hannah-mysql.mysql.database.azure.com',
-    user: 'c237_024',
-    password: 'c237024@2026!',
-    database: 'c',
+    host: 'localhost',
+    user: 'root',
+    password: 'RP738964$',
+    database: 'c237_worklah',
     ssl: {
         rejectUnauthorized: false
     }
