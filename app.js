@@ -175,6 +175,12 @@ let job = [
 ];
 
 // Define route (Leonard)
+
+//index.ejs
+app.get('/', function(req,res) {
+    res.render('index');
+})
+
 // Routes for CRUD operations
 
 // Route to retrieve and display all applicants
@@ -225,6 +231,8 @@ app.get('/job/:id', function(req, res) {
 app.get('/home', function(req, res) {
     res.render('home');
 });
+
+
 
 
 
