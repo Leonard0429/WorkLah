@@ -85,6 +85,11 @@ const checkAdmin = (req, res, next) => {
     }
 };
 
+//index route
+app.get('/', (req, res) => {
+    res.render('index', { user: req.session.user, messages: req.flash('success') });
+});
+
 //Routes for registration and login(Xanthus)
 
 app.get('/register', (req, res) => {
@@ -177,6 +182,12 @@ let job = [
 ];
 
 // Define route (Leonard)
+
+//index.ejs
+app.get('/', function(req,res) {
+    res.render('index');
+})
+
 // Routes for CRUD operations
 
 // Route to retrieve and display all applicants
@@ -190,13 +201,15 @@ app.get('/applicant/:id', function(req, res) {
     // Extracting the 'id' parameter from the request parameters and converting it to an integer
     const applicantId = parseInt(req.params.id);
     // Searching for a applicant in the 'applicants' array with a matching 'id'
-    const applicant = applicant.find((applicant) => applicant.id === applicantId);
+    const foundapplicant = applicant.find((applicant) => applicant.id === applicantId);
 
     // Checking if a applicant with the specified 'id' was found
-    if (applicant) {
+    if (foundapplicant) {
         //If the applicant is found, render a view called "applicantInfo" and pass the variable 'applicants' to the view for rendering.
-        res.render('applicantInfo', { applicant })
-    } 
+        res.render('applicantInfo', { applicant: foundapplicant });
+    } else {
+        res.status(404).send('Applicant not found');
+    }
 });
 
 // Route to retrieve and display all job
@@ -209,20 +222,24 @@ app.get('/joblist', function(req, res) {
 app.get('/job/:id', function(req, res) {
     // Extracting the 'id' parameter from the request parameters and converting it to an integer
     const jobId = parseInt(req.params.id);
-    // Searching for a applicant in the 'job' array with a matching 'id'
-    const job = job.find((job) => job.id === jobId);
+    // Searching for a job in the 'job' array with a matching 'id'
+    const foundJob = job.find((job) => job.id === jobId);
 
-    // Checking if a applicant with the specified 'id' was found
-    if (job) {
-        //If the applicant is found, render a view called "applicantInfo" and pass the variable 'applicants' to the view for rendering.
-        res.render('jobInfo', { job })
-    } 
+    // Checking if a job with the specified 'id' was found
+    if (foundJob) {
+        //If the job is found, render a view called "jobInfo" and pass the variable 'job' to the view for rendering.
+        res.render('jobInfo', { job: foundJob });
+    } else {
+        res.status(404).send('Job not found');
+    }
 });
 
 // Route to home.ejs 
 app.get('/home', function(req, res) {
     res.render('home');
 });
+
+
 
 
 
