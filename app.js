@@ -363,7 +363,7 @@ app.get('/logout', (req, res) => {
         return res.redirect('/register');
     }
     next();
-};
+
 
 app.post('/register', validateRegistration, (req, res) => {
     const { username, email, password, address, contact, role } = req.body;
