@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Application Information</title>
+</head>
+<body>
+    <%- include('partials/navbar.ejs') %>
+
+    <div class="container mt-3">
+        <% if (errors && errors.length > 0) { %>
+            <div class="alert alert-danger">
+                <% errors.forEach(function(error) { %>
+                    <p class="mb-0"><%= error %></p>
+                <% }); %>
+            </div>
+        <% } %>
+
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success">
+                <% messages.forEach(function(message) { %>
+                    <p class="mb-0"><%= message %></p>
+                <% }); %>
+            </div>
+        <% } %>
+
+        <h2>Application Details</h2>
+
+        <p><strong>Student:</strong> <%= application.username %></p>
+        <p><strong>Email:</strong> <%= application.email %></p>
+        <p><strong>Contact:</strong> <%= application.contact %></p>
+        <p><strong>Company:</strong> <%= application.company %></p>
+        <p><strong>Job:</strong> <%= application.title %></p>
+        <p><strong>Applied On:</strong> <%= application.applied_at %></p>
+        <p><strong>Status:</strong> <%= application.status %></p>
+
+        <a
+            href="/application/<%= application.id %>/resume"
+            class="btn btn-primary">
+            Download Resume
+        </a>
+
+        <% if (
+            user.role === 'student' &&
+            application.status === 'pending'
+        ) { %>
+            <form
+                action="/application/<%= application.id %>/delete"
+                method="POST"
+                class="d-inline"
+                onsubmit="return confirm('Delete this pending application?')">
+                <button type="submit" class="btn btn-danger">
+                    Delete Application
+                </button>
+            </form>
+        <% } %>
+
+        <% if (user.role === 'admin') { %>
+            <form
+                action="/application/<%= application.id %>/status"
+                method="POST"
+                class="mt-3">
+                <label for="status" class="form-label">
+                    Update Status
+                </label>
+                <select id="status" name="status" class="form-select mb-2">
+                    <option
+                        value="pending"
+                        <%= application.status === 'pending' ? 'selected' : '' %>>
+                        Pending
+                    </option>
+                    <option
+                        value="accepted"
+                        <%= application.status === 'accepted' ? 'selected' : '' %>>
+                        Accepted
+                    </option>
+                    <option
+                        value="rejected"
+                        <%= application.status === 'rejected' ? 'selected' : '' %>>
+                        Rejected
+                    </option>
+                </select>
+                <button type="submit" class="btn btn-success">
+                    Save Status
+                </button>
+            </form>
+        <% } %>
+
+        <a href="/applicationList" class="btn btn-secondary mt-3">
+            Back to Applications
+        </a>
+    </div>
+</body>
+</html>

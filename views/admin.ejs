@@ -5,23 +5,16 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">WorkLah</a>
-            <div>
-                <a class="btn btn-outline-light me-2" href="/dashboard">Dashboard</a>
-                <a class="btn btn-outline-light me-2" href="/applicantlist">Applicants</a>
-                <a class="btn btn-danger" href="/logout">Logout</a>
-            </div>
-        </div>
-    </nav>
+    <%- include('partials/navbar.ejs') %>
 
     <div class="container mt-5">
-        <h1>Admin Panel</h1>
-        <p>Logged in as admin: <strong><%= user.username %></strong></p>
+        <h1>Welcome, <%= user.username %>!</h1>
+        <p>Username: <strong><%= user.username %></strong></p>
+        <p>Email: <%= user.email %></p>
+        <p>Role: <strong><%= user.role %></strong></p>
 
-        <a href="/applicantlist" class="btn btn-primary mt-3">View Applicants</a>
-        <a href="/joblist" class="btn btn-secondary mt-3">Manage Jobs</a>
+        <a href="/joblist" class="btn btn-primary mt-3">Manage Jobs</a>
+        <a href="/applicationList" class="btn btn-secondary mt-3">Manage Applications</a>
     </div>
 </body>
 </html>

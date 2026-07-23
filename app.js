@@ -3,30 +3,69 @@ const mysql = require('mysql2');
 const session = require('express-session');
 const flash = require('connect-flash')
 const multer = require('multer')
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 // Specify the port for the server to listen on
 const port = 3000;
 
-//Set up multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req,file,cb) => {
-        cb(null, 'public/images');
+// Create the private folder used to store uploaded resumes
+const resumeDirectory = path.join(__dirname, 'uploads', 'resumes');
+
+if (!fs.existsSync(resumeDirectory)) {
+    fs.mkdirSync(resumeDirectory, { recursive: true });
+}
+
+// Set up multer for PDF resume uploads
+const resumeStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, resumeDirectory);
     },
-    filename:(req,file,cb) => {
-        cb(null, file.originalname);
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
     }
 });
 
-const upload = multer({ storage: storage });
+const uploadResume = multer({
+    storage: resumeStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf') {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF resume files are allowed'));
+        }
+    }
+});
+
+// Display upload errors on the selected job application form
+const handleResumeUpload = (req, res, next) => {
+    uploadResume.single('resume')(req, res, (error) => {
+        if (error) {
+            const message = error.code === 'LIMIT_FILE_SIZE'
+                ? 'Resume must not be larger than 5 MB'
+                : error.message;
+
+            req.flash('error', message);
+            return res.redirect('/job/' + req.params.id + '/apply');
+        }
+
+        next();
+    });
+};
 
 
 //Database
 const db = mysql.createConnection({
+  
     host: 'c237-hannah-mysql.mysql.database.azure.com',
     user: 'c237_024',
     password: 'c237024@2026!',
     database: 'c237_024_t3ca2',
+
     ssl: {
         rejectUnauthorized: false
     }
@@ -60,7 +99,11 @@ app.use(session({
 
 app.use(flash());
 
-
+// Make the logged-in user available to every EJS page
+app.use((req, res, next) => {
+    res.locals.user = req.session.user || null;
+    next();
+});
 
 const checkAuthenticated = (req, res, next) => {
     if (req.session.user) {
@@ -72,12 +115,22 @@ const checkAuthenticated = (req, res, next) => {
 };
 
 const checkAdmin = (req, res, next) => {
-    if (req.session.user.role === 'admin') {
+    if (req.session.user && req.session.user.role === 'admin') {
         return next();
     } else {
         req.flash('error', 'Access denied');
-        res.redirect('/dashboard');
+        res.redirect('/joblist');
     }
+};
+
+// Ensure only students can submit or delete applications
+const checkStudent = (req, res, next) => {
+    if (req.session.user && req.session.user.role === 'student') {
+        return next();
+    }
+
+    req.flash('error', 'Only students can perform this action');
+    res.redirect('/joblist');
 };
 
 //index route
@@ -159,80 +212,517 @@ app.get('/logout', (req, res) => {
     res.redirect('/login');
 });
 
-// In-memory data for applicants
-let applicant = [
-  { id: 1, name: 'Peter Tan', job_applied: 'Shopee - Data Analyst' },
-  { id: 2, name: 'Mary Lim', job_applied: 'DBS - AI Engineer' },
-  { id: 3, name: 'John Ho', job_applied: 'Micron - Software Developer' }
-];
+    if (!username || !email || !password || !address || !contact) {
+        return res.status(400).send('All fields are required.');
+    }
+    if (password.length < 6) {
+        req.flash('error', 'Password should be at least 6 or more characters long');
+        req.flash('formData', req.body);
+        return res.redirect('/register');
+    }
+    next();
+};
 
+app.post('/register', validateRegistration, (req, res) => {
+    const { username, email, password, address, contact, role } = req.body;
 
-// In-memory data for applicants
-let job = [
-  { id: 1, job_title: 'Bank Analyst', company: 'DBS', date: '2026-08-15' },
-  { id: 2, job_title: 'Mechanic', company: 'ST Engineering', date: '2026-08-15' },
-  { id: 3, job_title: 'Waiter', company: 'Haidilao SG', date: '2026-08-15'}
-];
+    const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
+    db.query(sql, [username, email, password, address, contact, role], (err, result) => {
+        if (err) throw err;
+        req.flash('success', 'Registration successful! Please log in.');
+        res.redirect('/login');
+    });
+});
+
+app.get('/login', (req, res) => {
+    res.render('login', {
+        messages: req.flash('success'),
+        errors: req.flash('error')
+    });
+});
+
+app.post('/login', (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        req.flash('error', 'All fields are required.');
+        return res.redirect('/login');
+    }
+
+    const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
+    db.query(sql, [email, password], (err, results) => {
+        if (err) throw err;
+
+        if (results.length > 0) {
+            req.session.user = results[0];
+            req.flash('success', 'Login successful!');
+            if (req.session.user.role === 'admin') {
+                res.redirect('/admin');
+            } else {
+                res.redirect('/joblist');
+            }
+        } else {
+            req.flash('error', 'Invalid email or password.');
+            res.redirect('/login');
+        }
+    });
+});
+
+app.get('/admin', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('admin', { user: req.session.user });
+});
+
+app.get('/logout', (req, res) => {
+    req.session.destroy();
+    res.redirect('/login');
+});
 
 // Define route (Leonard)
 
-//index.ejs
-app.get('/', function(req,res) {
-    res.render('index');
-})
-
 // Routes for CRUD operations
 
-// Route to retrieve and display all applicants
-app.get('/applicantlist', function(req, res) {
-    //render a view called "applicantlist" and pass the variable 'applicant' to the view for rendering
-    res.render('applicantlist', { applicant });
-});
+// Display applications based on the logged-in user's role
+app.get('/applicationList', checkAuthenticated, (req, res) => {
+    let sql;
+    let values = [];
 
-// Route to get a specific applicant by ID
-app.get('/applicant/:id', function(req, res) {
-    // Extracting the 'id' parameter from the request parameters and converting it to an integer
-    const applicantId = parseInt(req.params.id);
-    // Searching for a applicant in the 'applicants' array with a matching 'id'
-    const foundapplicant = applicant.find((applicant) => applicant.id === applicantId);
-
-    // Checking if a applicant with the specified 'id' was found
-    if (foundapplicant) {
-        //If the applicant is found, render a view called "applicantInfo" and pass the variable 'applicants' to the view for rendering.
-        res.render('applicantInfo', { applicant: foundapplicant });
+    if (req.session.user.role === 'admin') {
+        // Admin can view applications from every student
+        sql = `
+            SELECT applications.*, users.username, users.email,
+                   users.contact, gigs.title, gigs.company
+            FROM applications
+            JOIN users ON applications.student_id = users.id
+            JOIN gigs ON applications.gig_id = gigs.id
+            ORDER BY applications.applied_at DESC
+        `;
     } else {
-        res.status(404).send('Applicant not found');
+        // Student can only view their own applications
+        sql = `
+            SELECT applications.*, gigs.title, gigs.company
+            FROM applications
+            JOIN gigs ON applications.gig_id = gigs.id
+            WHERE applications.student_id = ?
+            ORDER BY applications.applied_at DESC
+        `;
+
+        values = [req.session.user.id];
     }
+
+    db.query(sql, values, (error, results) => {
+        if (error) throw error;
+
+        res.render('applicationList', {
+            applications: results,
+            errors: req.flash('error'),
+            messages: req.flash('success')
+        });
+    });
 });
 
-// Route to retrieve and display all job
-app.get('/joblist', function(req, res) {
-    //render a view called "joblist" and pass the variable 'applicant' to the view for rendering
-    res.render('joblist', { job });
+// Display all jobs from the database
+app.get('/joblist', checkAuthenticated, (req, res) => {
+    const sql = 'SELECT * FROM gigs ORDER BY deadline ASC';
+
+    db.query(sql, (error, results) => {
+        if (error) throw error;
+
+        // Pass the database results to the job list page
+        res.render('jobList', {
+            job: results,
+            user: req.session.user,
+            errors: req.flash('error'),
+            messages: req.flash('success')
+        });
+    });
 });
 
-// Route to get a specific job by ID
-app.get('/job/:id', function(req, res) {
-    // Extracting the 'id' parameter from the request parameters and converting it to an integer
-    const jobId = parseInt(req.params.id);
-    // Searching for a job in the 'job' array with a matching 'id'
-    const foundJob = job.find((job) => job.id === jobId);
+// Display one job from the database
+app.get('/job/:id', checkAuthenticated, (req, res) => {
+    const jobId = req.params.id;
+    const sql = 'SELECT * FROM gigs WHERE id = ?';
 
-    // Checking if a job with the specified 'id' was found
-    if (foundJob) {
-        //If the job is found, render a view called "jobInfo" and pass the variable 'job' to the view for rendering.
-        res.render('jobInfo', { job: foundJob });
-    } else {
-        res.status(404).send('Job not found');
+    // Use a placeholder to safely provide the selected job ID
+    db.query(sql, [jobId], (error, results) => {
+        if (error) throw error;
+
+        if (results.length > 0) {
+            res.render('jobInfo', {
+                job: results[0],
+                user: req.session.user
+            });
+        } else {
+            res.status(404).send('Job not found');
+        }
+    });
+});
+
+// Display the selected job application form to a student
+app.get('/job/:id/apply', checkAuthenticated, checkStudent, (req, res) => {
+    const jobId = req.params.id;
+    const sql = 'SELECT * FROM gigs WHERE id = ?';
+
+    db.query(sql, [jobId], (error, results) => {
+        if (error) throw error;
+
+        if (results.length > 0) {
+            res.render('applyJob', {
+                job: results[0],
+                errors: req.flash('error')
+            });
+        } else {
+            res.status(404).send('Job not found');
+        }
+    });
+});
+
+// Submit a student's job application and PDF resume
+app.post(
+    '/job/:id/apply',
+    checkAuthenticated,
+    checkStudent,
+    handleResumeUpload,
+    (req, res) => {
+        const studentId = req.session.user.id;
+        const jobId = req.params.id;
+
+        if (!req.file) {
+            req.flash('error', 'Please upload your resume');
+            return res.redirect('/job/' + jobId + '/apply');
+        }
+
+        const sql = `
+            INSERT INTO applications (student_id, gig_id, resume_filename)
+            VALUES (?, ?, ?)
+        `;
+
+        db.query(sql, [studentId, jobId, req.file.filename], (error, result) => {
+            if (error) {
+                // Remove the uploaded file when the application is not saved
+                fs.unlink(req.file.path, () => {});
+
+                if (error.code === 'ER_DUP_ENTRY') {
+                    req.flash('error', 'You have already applied for this job');
+                    return res.redirect('/job/' + jobId + '/apply');
+                }
+
+                if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                    return res.status(404).send('Job not found');
+                }
+
+                throw error;
+            }
+
+            req.flash('success', 'Application submitted successfully');
+            res.redirect('/applicationList');
+        });
     }
+);
+
+// Display one application to its owner or an admin
+app.get('/application/:id', checkAuthenticated, (req, res) => {
+    const applicationId = req.params.id;
+    const sql = `
+        SELECT applications.*, users.username, users.email,
+               users.contact, gigs.title, gigs.company
+        FROM applications
+        JOIN users ON applications.student_id = users.id
+        JOIN gigs ON applications.gig_id = gigs.id
+        WHERE applications.id = ?
+    `;
+
+    db.query(sql, [applicationId], (error, results) => {
+        if (error) throw error;
+
+        if (results.length === 0) {
+            return res.status(404).send('Application not found');
+        }
+
+        const application = results[0];
+        const isAdmin = req.session.user.role === 'admin';
+        const isOwner = application.student_id === req.session.user.id;
+
+        if (!isAdmin && !isOwner) {
+            req.flash('error', 'Access denied');
+            return res.redirect('/applicationList');
+        }
+
+        res.render('applicationInfo', {
+            application,
+            errors: req.flash('error'),
+            messages: req.flash('success')
+        });
+    });
 });
 
-// Route to home.ejs 
-app.get('/home', function(req, res) {
-    res.render('home');
+// Download a resume when the user is the owner or an admin
+app.get('/application/:id/resume', checkAuthenticated, (req, res) => {
+    const applicationId = req.params.id;
+    const sql = 'SELECT * FROM applications WHERE id = ?';
+
+    db.query(sql, [applicationId], (error, results) => {
+        if (error) throw error;
+
+        if (results.length === 0) {
+            return res.status(404).send('Application not found');
+        }
+
+        const application = results[0];
+        const isAdmin = req.session.user.role === 'admin';
+        const isOwner = application.student_id === req.session.user.id;
+
+        if (!isAdmin && !isOwner) {
+            req.flash('error', 'Access denied');
+            return res.redirect('/applicationList');
+        }
+
+        const resumePath = path.join(
+            resumeDirectory,
+            application.resume_filename
+        );
+
+        res.download(resumePath);
+    });
 });
 
+// Delete a student's own pending application
+app.post(
+    '/application/:id/delete',
+    checkAuthenticated,
+    checkStudent,
+    (req, res) => {
+        const applicationId = req.params.id;
+        const studentId = req.session.user.id;
+        const selectSql = `
+            SELECT *
+            FROM applications
+            WHERE id = ?
+            AND student_id = ?
+            AND status = 'pending'
+        `;
 
+        db.query(
+            selectSql,
+            [applicationId, studentId],
+            (selectError, results) => {
+                if (selectError) throw selectError;
+
+                if (results.length === 0) {
+                    req.flash(
+                        'error',
+                        'Application not found or can no longer be deleted'
+                    );
+                    return res.redirect('/applicationList');
+                }
+
+                const application = results[0];
+                const deleteSql = 'DELETE FROM applications WHERE id = ?';
+
+                db.query(deleteSql, [applicationId], (deleteError) => {
+                    if (deleteError) throw deleteError;
+
+                    const resumePath = path.join(
+                        resumeDirectory,
+                        application.resume_filename
+                    );
+
+                    fs.unlink(resumePath, () => {});
+                    req.flash('success', 'Application deleted successfully');
+                    res.redirect('/applicationList');
+                });
+            }
+        );
+    }
+);
+
+// Allow an admin to update only an application's status
+app.post(
+    '/application/:id/status',
+    checkAuthenticated,
+    checkAdmin,
+    (req, res) => {
+        const applicationId = req.params.id;
+        const status = req.body.status;
+        const allowedStatuses = ['pending', 'accepted', 'rejected'];
+
+        if (!allowedStatuses.includes(status)) {
+            req.flash('error', 'Invalid application status');
+            return res.redirect('/applicationList');
+        }
+
+        const sql = 'UPDATE applications SET status = ? WHERE id = ?';
+
+        db.query(sql, [status, applicationId], (error, result) => {
+            if (error) throw error;
+
+            if (result.affectedRows === 0) {
+                return res.status(404).send('Application not found');
+            }
+
+            req.flash('success', 'Application status updated');
+            res.redirect('/applicationList');
+        });
+    }
+);
+
+// Display the Add Job form to an admin (Bryan)
+app.get('/addjob', checkAuthenticated, checkAdmin, (req, res) => {
+    res.render('addJob', {
+        user: req.session.user,
+        errors: req.flash('error')
+    });
+});
+
+// Add a new job to the database (Bryan)
+app.post('/addjob', checkAuthenticated, checkAdmin, (req, res) => {
+    const {
+        title,
+        company,
+        description,
+        category,
+        pay,
+        location,
+        deadline
+    } = req.body;
+
+    // Ensure the required job information was entered
+    if (!title || !company || !description || !category || !pay || !deadline) {
+        req.flash('error', 'Please complete all required job fields');
+        return res.redirect('/addjob');
+    }
+
+    const sql = `
+        INSERT INTO gigs
+        (title, company, description, category, pay,
+         location, deadline, posted_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+        title,
+        company,
+        description,
+        category,
+        pay,
+        location || null,
+        deadline,
+        req.session.user.id
+    ];
+
+    db.query(sql, values, (error, result) => {
+        if (error) throw error;
+
+        req.flash('success', 'Job added successfully');
+        res.redirect('/joblist');
+    });
+});
+
+// Display the selected job in the edit form (Nissi)
+app.get('/job/:id/edit', checkAuthenticated, checkAdmin, (req, res) => {
+    const jobId = req.params.id;
+    const sql = `
+        SELECT *,
+               DATE_FORMAT(deadline, '%Y-%m-%d') AS deadline
+        FROM gigs
+        WHERE id = ?
+    `;
+
+    db.query(sql, [jobId], (error, results) => {
+        if (error) throw error;
+
+        if (results.length > 0) {
+            res.render('editJob', {
+                job: results[0],
+                user: req.session.user,
+                errors: req.flash('error')
+            });
+        } else {
+            res.status(404).send('Job not found');
+        }
+    });
+});
+
+// Update the selected job in the database (Nissi)
+app.post('/job/:id/edit', checkAuthenticated, checkAdmin, (req, res) => {
+    const jobId = req.params.id;
+    const {
+        title,
+        company,
+        description,
+        category,
+        pay,
+        location,
+        deadline
+    } = req.body;
+
+    // Ensure the required job information was entered
+    if (!title || !company || !description || !category || !pay || !deadline) {
+        req.flash('error', 'Please complete all required job fields');
+        return res.redirect('/job/' + jobId + '/edit');
+    }
+
+    const sql = `
+        UPDATE gigs
+        SET title = ?,
+            company = ?,
+            description = ?,
+            category = ?,
+            pay = ?,
+            location = ?,
+            deadline = ?
+        WHERE id = ?
+    `;
+
+    const values = [
+        title,
+        company,
+        description,
+        category,
+        pay,
+        location || null,
+        deadline,
+        jobId
+    ];
+
+    db.query(sql, values, (error, result) => {
+        if (error) throw error;
+
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Job not found');
+        }
+
+        req.flash('success', 'Job updated successfully');
+        res.redirect('/joblist');
+    });
+});
+
+// Delete a selected job from the database (Jomond)
+app.post('/deletejob/:id', checkAuthenticated, checkAdmin, (req, res) => {
+    const jobId = req.params.id;
+    const sql = 'DELETE FROM gigs WHERE id = ?';
+
+    db.query(sql, [jobId], (error, result) => {
+        if (error) {
+            // A job with applications should not be deleted
+            if (error.code === 'ER_ROW_IS_REFERENCED_2') {
+                req.flash(
+                    'error',
+                    'This job cannot be deleted because students have applied for it'
+                );
+                return res.redirect('/joblist');
+            }
+
+            throw error;
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Job not found');
+        }
+
+        req.flash('success', 'Job deleted successfully');
+        res.redirect('/joblist');
+    });
+});
 
 
 

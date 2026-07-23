@@ -10,33 +10,109 @@
 <body>
     <%- include ('partials/navbar.ejs') %>
     <div class="container mt-3">
-        <h2>Worklah</h2>          
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Job ID</th>
-                    <th>Company</th>
-                    <th>Job Title</th>
-                    <th>Date</th>
-                    <th>Info</th>
-                    <th>Apply</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Display the applicant information by looping through the applicant array-->
-                <% for (let i = 0; i < job.length; i++) { %>
-                    <tr>
-                        <td><%= job[i].id %></td>
-                        <td><%= job[i].company %></td>
-                        <td><%= job[i].job_title %></td>
-                        <td><%= job[i].date %></td>
-                        <td><a href="/job/<%= job[i].id %>">Info</a></td>
-                        <td><a href="/job/<%= job[i].id %>/apply">Apply</a></td>
+        <% if (errors && errors.length > 0) { %>
+            <div class="alert alert-danger">
+                <% errors.forEach(function(error) { %>
+                    <p class="mb-0"><%= error %></p>
+                <% }); %>
+            </div>
+        <% } %>
+        <% if (messages && messages.length > 0) { %>
+            <div class="alert alert-success">
+                <% messages.forEach(function(message) { %>
+                    <p class="mb-0"><%= message %></p>
+                <% }); %>
+            </div>
+        <% } %>
 
+        <h2>
+            <%= user.role === 'admin' ? 'Manage Jobs' : 'Available Jobs' %>
+        </h2>
+
+        <% if (user.role === 'admin') { %>
+            <a href="/addjob" class="btn btn-primary mb-3">
+                Add Job
+            </a>
+        <% } %>
+
+        <% if (job.length === 0) { %>
+            <div class="alert alert-info">
+                No jobs are currently available.
+            </div>
+        <% } else { %>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th>Job Title</th>
+                        <th>Category</th>
+                        <th>Pay</th>
+                        <th>Location</th>
+                        <th>Deadline</th>
+                        <th>Details</th>
+                        <% if (user.role === 'student') { %>
+                            <th>Apply</th>
+                        <% } %>
+                        <% if (user.role === 'admin') { %>
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        <% } %>
                     </tr>
-                <% } %>
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                    <% for (let i = 0; i < job.length; i++) { %>
+                        <tr>
+                            <td><%= job[i].company %></td>
+                            <td><%= job[i].title %></td>
+                            <td><%= job[i].category %></td>
+                            <td>$<%= job[i].pay %></td>
+                            <td>
+                                <%= job[i].location || 'Not specified' %>
+                            </td>
+                            <td>
+                                <%= job[i].deadline || 'No deadline' %>
+                            </td>
+                            <td>
+                                <a href="/job/<%= job[i].id %>">
+                                    View
+                                </a>
+                            </td>
+                            <% if (user.role === 'student') { %>
+                                <td>
+                                    <a
+                                        href="/job/<%= job[i].id %>/apply"
+                                        class="btn btn-success btn-sm">
+                                        Apply
+                                    </a>
+                                </td>
+                            <% } %>
+                            <% if (user.role === 'admin') { %>
+                                <td>
+                                    <a
+                                        href="/job/<%= job[i].id %>/edit"
+                                        class="btn btn-warning btn-sm">
+                                        Edit
+                                    </a>
+                                </td>
+                                <td>
+                                    <form
+                                        action="/deletejob/<%= job[i].id %>"
+                                        method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this job?')">
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-sm">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </td>
+                            <% } %>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        <% } %>
     </div>
 </body>
 </html>
