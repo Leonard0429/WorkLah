@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <%- include('partials/styles.ejs') %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <title>Worklah App</title>
 </head>
@@ -25,93 +26,369 @@
             </div>
         <% } %>
 
-        <h2>
+        <h2 class="page-title">
             <%= user.role === 'admin' ? 'Manage Jobs' : 'Available Jobs' %>
         </h2>
 
         <% if (user.role === 'admin') { %>
-            <a href="/addjob" class="btn btn-primary mb-3">
+            <a href="/addjob" class="btn btn-worklah mb-3">
                 Add Job
             </a>
         <% } %>
 
+        <!-- Search, filter and sorting controls (Jun Yi) -->
+        <form
+            method="GET"
+            action="/joblist"
+            class="card worklah-card mb-4">
+
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label
+                            for="search"
+                            class="form-label">
+                            Search Job Title
+                        </label>
+
+                        <input
+                            type="text"
+                            id="search"
+                            name="search"
+                            class="form-control"
+                            placeholder="Enter a job title"
+                            value="<%= search %>">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label
+                            for="sortBy"
+                            class="form-label">
+                            Sort By
+                        </label>
+
+                        <select
+                            id="sortBy"
+                            name="sortBy"
+                            class="form-select"
+                            onchange="this.form.submit()">
+
+                            <option value="">
+                                Deadline
+                            </option>
+
+                            <option
+                                value="company"
+                                <%= sortBy === 'company'
+                                    ? 'selected'
+                                    : '' %>>
+                                Company
+                            </option>
+
+                            <option
+                                value="category"
+                                <%= sortBy === 'category'
+                                    ? 'selected'
+                                    : '' %>>
+                                Category
+                            </option>
+
+                            <option
+                                value="pay"
+                                <%= sortBy === 'pay'
+                                    ? 'selected'
+                                    : '' %>>
+                                Pay
+                            </option>
+
+                            <option
+                                value="location"
+                                <%= sortBy === 'location'
+                                    ? 'selected'
+                                    : '' %>>
+                                Location
+                            </option>
+
+                            <option
+                                value="deadline"
+                                <%= sortBy === 'deadline'
+                                    ? 'selected'
+                                    : '' %>>
+                                Deadline
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <button
+                            type="submit"
+                            class="btn btn-worklah w-100">
+                            Search
+                        </button>
+                    </div>
+                </div>
+
+                <details
+                    class="mt-3"
+                    <%= company || category || payRange
+                        ? 'open'
+                        : '' %>>
+                    <summary class="fw-semibold">
+                        More Filters
+                    </summary>
+
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <label
+                                for="company"
+                                class="form-label">
+                                Company
+                            </label>
+
+                            <select
+                                id="company"
+                                name="company"
+                                class="form-select">
+
+                                <option value="">
+                                    All Companies
+                                </option>
+
+                                <% for (
+                                    let i = 0;
+                                    i < companyList.length;
+                                    i++
+                                ) { %>
+                                    <option
+                                        value="<%= companyList[i] %>"
+                                        <%= company
+                                            === companyList[i]
+                                            ? 'selected'
+                                            : '' %>>
+
+                                        <%= companyList[i] %>
+                                    </option>
+                                <% } %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label
+                                for="category"
+                                class="form-label">
+                                Category
+                            </label>
+
+                            <select
+                                id="category"
+                                name="category"
+                                class="form-select">
+
+                                <option value="">
+                                    All Categories
+                                </option>
+
+                                <% for (
+                                    let i = 0;
+                                    i < categoryList.length;
+                                    i++
+                                ) { %>
+                                    <option
+                                        value="<%= categoryList[i] %>"
+                                        <%= category
+                                            === categoryList[i]
+                                            ? 'selected'
+                                            : '' %>>
+
+                                        <%= categoryList[i] %>
+                                    </option>
+                                <% } %>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label
+                                for="payRange"
+                                class="form-label">
+                                Pay
+                            </label>
+
+                            <select
+                                id="payRange"
+                                name="payRange"
+                                class="form-select">
+
+                                <option value="">
+                                    Any Pay
+                                </option>
+
+                                <option
+                                    value="under15"
+                                    <%= payRange === 'under15'
+                                        ? 'selected'
+                                        : '' %>>
+                                    Under $15/hr
+                                </option>
+
+                                <option
+                                    value="15to20"
+                                    <%= payRange === '15to20'
+                                        ? 'selected'
+                                        : '' %>>
+                                    $15–$20/hr
+                                </option>
+
+                                <option
+                                    value="above20"
+                                    <%= payRange === 'above20'
+                                        ? 'selected'
+                                        : '' %>>
+                                    Above $20/hr
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 d-flex gap-2">
+                            <a
+                                href="/joblist"
+                                class="btn btn-secondary">
+                                Clear
+                            </a>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </form>
+
         <% if (job.length === 0) { %>
             <div class="alert alert-info">
-                No jobs are currently available.
+                No jobs match your search or filters.
             </div>
         <% } else { %>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Company</th>
-                        <th>Job Title</th>
-                        <th>Category</th>
-                        <th>Pay</th>
-                        <th>Location</th>
-                        <th>Deadline</th>
-                        <th>Details</th>
-                        <% if (user.role === 'student') { %>
-                            <th>Apply</th>
-                        <% } %>
-                        <% if (user.role === 'admin') { %>
-                            <th>Edit</th>
-                            <th>Delete</th>
-                        <% } %>
-                    </tr>
-                </thead>
+            <div class="row g-3">
+                <% for (let i = 0; i < job.length; i++) { %>
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card card-gig h-100">
+                            <div class="card-body d-flex flex-column">
+                                <span
+                                    class="badge badge-category align-self-start mb-2">
+                                    <%= job[i].category %>
+                                </span>
 
-                <tbody>
-                    <% for (let i = 0; i < job.length; i++) { %>
-                        <tr>
-                            <td><%= job[i].company %></td>
-                            <td><%= job[i].title %></td>
-                            <td><%= job[i].category %></td>
-                            <td>$<%= job[i].pay %></td>
-                            <td>
-                                <%= job[i].location || 'Not specified' %>
-                            </td>
-                            <td>
-                                <%= job[i].deadline || 'No deadline' %>
-                            </td>
-                            <td>
-                                <a href="/job/<%= job[i].id %>">
-                                    View
-                                </a>
-                            </td>
-                            <% if (user.role === 'student') { %>
-                                <td>
+                                <h4 class="page-title">
+                                    <%= job[i].title %>
+                                </h4>
+
+                                <p class="fw-semibold">
+                                    <%= job[i].company %>
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Pay:</strong>
+                                    $<%= job[i].pay %>
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Location:</strong>
+                                    <%= job[i].location || 'Not specified' %>
+                                </p>
+
+                                <p class="mb-3">
+                                    <strong>Deadline:</strong>
+
+                                    <% if (job[i].deadline) { %>
+                                        <%= new Date(
+                                            job[i].deadline
+                                        ).toLocaleDateString(
+                                            'en-SG',
+                                            {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                year: 'numeric'
+                                            }
+                                        ) %>
+                                    <% } else { %>
+                                        No deadline
+                                    <% } %>
+                                </p>
+
+                                <div class="d-flex flex-wrap gap-2 mt-auto">
                                     <a
-                                        href="/job/<%= job[i].id %>/apply"
-                                        class="btn btn-success btn-sm">
-                                        Apply
+                                        href="/job/<%= job[i].id %>"
+                                        class="btn btn-primary btn-sm">
+                                        View
                                     </a>
-                                </td>
-                            <% } %>
-                            <% if (user.role === 'admin') { %>
-                                <td>
-                                    <a
-                                        href="/job/<%= job[i].id %>/edit"
-                                        class="btn btn-warning btn-sm">
-                                        Edit
-                                    </a>
-                                </td>
-                                <td>
-                                    <form
-                                        action="/deletejob/<%= job[i].id %>"
-                                        method="POST"
-                                        onsubmit="return confirm('Are you sure you want to delete this job?')">
-                                        <button
-                                            type="submit"
-                                            class="btn btn-danger btn-sm">
-                                            Delete
-                                        </button>
-                                    </form>
-                                </td>
-                            <% } %>
-                        </tr>
-                    <% } %>
-                </tbody>
-            </table>
+
+                                    <% if (user.role === 'student') { %>
+                                        <a
+                                            href="/job/<%= job[i].id %>/apply"
+                                            class="btn btn-worklah btn-sm">
+                                            Apply
+                                        </a>
+
+                                        <% if (job[i].isBookmarked) { %>
+                                            <form
+                                                action="/bookmark/<%= job[i].id %>/delete"
+                                                method="POST"
+                                                class="m-0">
+
+                                                <input
+                                                    type="hidden"
+                                                    name="returnPage"
+                                                    value="joblist">
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-outline-danger btn-sm">
+                                                    Remove Saved
+                                                </button>
+                                            </form>
+                                        <% } else { %>
+                                            <form
+                                                action="/bookmark/<%= job[i].id %>"
+                                                method="POST"
+                                                class="m-0">
+
+                                                <input
+                                                    type="hidden"
+                                                    name="returnPage"
+                                                    value="joblist">
+
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-outline-primary btn-sm">
+                                                    Save Job
+                                                </button>
+                                            </form>
+                                        <% } %>
+                                    <% } %>
+
+                                    <% if (user.role === 'admin') { %>
+                                        <a
+                                            href="/job/<%= job[i].id %>/edit"
+                                            class="btn btn-warning btn-sm">
+                                            Edit
+                                        </a>
+
+                                        <form
+                                            action="/deletejob/<%= job[i].id %>"
+                                            method="POST"
+                                            class="m-0"
+                                            onsubmit="return confirm('Are you sure you want to delete this job?')">
+
+                                            <button
+                                                type="submit"
+                                                class="btn btn-danger btn-sm">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
         <% } %>
     </div>
 </body>

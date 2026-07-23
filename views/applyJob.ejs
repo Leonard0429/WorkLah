@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <%- include('partials/styles.ejs') %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <title>Apply for Job</title>
 </head>
@@ -13,8 +14,8 @@
     <div class="container mt-5">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
+                <div class="card worklah-card form-card">
+                    <div class="card-header worklah-card-header">
                         <h3 class="mb-0">Job Application</h3>
                     </div>
 
@@ -42,25 +43,22 @@
                             <%= user.email %>
                         </p>
 
+                        <div class="alert alert-info">
+                            Your saved profile resume will be attached to
+                            this application.
+
+                            <a
+                                href="/profile/resume"
+                                class="alert-link">
+                                View Resume
+                            </a>
+                        </div>
+
                         <form
                             action="/job/<%= job.id %>/apply"
-                            method="POST"
-                            enctype="multipart/form-data">
-                            <div class="mb-3">
-                                <label for="resume" class="form-label">
-                                    Resume (PDF, maximum 5 MB)
-                                </label>
-                                <input
-                                    type="file"
-                                    id="resume"
-                                    name="resume"
-                                    class="form-control"
-                                    accept=".pdf,application/pdf"
-                                    required>
-                            </div>
-
+                            method="POST">
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success">
+                                <button type="submit" class="btn btn-worklah">
                                     Submit Application
                                 </button>
                                 <a href="/joblist" class="btn btn-secondary">
