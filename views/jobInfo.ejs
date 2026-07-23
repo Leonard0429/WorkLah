@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <title>Job Information</title>
+</head>
+<body>
+    <%- include('partials/navbar.ejs') %>
+
+    <div class="container mt-3">
+        <h2><%= job.title %></h2>
+
+        <p>
+            <strong>Company:</strong>
+            <%= job.company %>
+        </p>
+
+        <p>
+            <strong>Description:</strong>
+            <%= job.description %>
+        </p>
+
+        <p>
+            <strong>Category:</strong>
+            <%= job.category %>
+        </p>
+
+        <p>
+            <strong>Pay:</strong>
+            $<%= job.pay %>
+        </p>
+
+        <p>
+            <strong>Location:</strong>
+            <%= job.location || 'Not specified' %>
+        </p>
+
+        <p>
+            <strong>Deadline:</strong>
+            <%= job.deadline || 'No deadline' %>
+        </p>
+
+        <% if (user.role === 'student') { %>
+            <a
+                href="/job/<%= job.id %>/apply"
+                class="btn btn-success">
+                Apply for this Job
+            </a>
+        <% } %>
+
+        <a href="/joblist" class="btn btn-secondary">
+            Back to Jobs
+        </a>
+    </div>
+</body>
+</html>
