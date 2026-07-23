@@ -75,52 +75,28 @@
 
                 <div class="d-flex flex-wrap gap-2">
                     <% if (user.role === 'student') { %>
-                        <a
-                            href="/job/<%= job.id %>/apply"
-                            class="btn btn-worklah">
+                        <a href="/job/<%= job.id %>/apply" class="btn btn-worklah">
                             Apply for this Job
                         </a>
 
                         <% if (isBookmarked) { %>
-                            <form
-                                action="/bookmark/<%= job.id %>/delete"
-                                method="POST"
-                                class="m-0">
+                            <form action="/bookmark/<%= job.id %>/delete" method="POST" class="m-0">
 
-                                <input
-                                    type="hidden"
-                                    name="returnPage"
-                                    value="jobInfo">
+                                <input type="hidden" name="returnPage" value="jobInfo">
 
-                                <button
-                                    type="submit"
-                                    class="btn btn-outline-danger">
-                                    Remove Saved
-                                </button>
+                                <button type="submit" class="btn btn-outline-danger">Remove Saved</button>
                             </form>
                         <% } else { %>
-                            <form
-                                action="/bookmark/<%= job.id %>"
-                                method="POST"
-                                class="m-0">
+                            <form action="/bookmark/<%= job.id %>" method="POST" class="m-0">
 
-                                <input
-                                    type="hidden"
-                                    name="returnPage"
-                                    value="jobInfo">
+                                <input type="hidden" name="returnPage" value="jobInfo">
 
-                                <button
-                                    type="submit"
-                                    class="btn btn-outline-primary">
-                                    Save Job
-                                </button>
+                                <button type="submit" class="btn btn-outline-primary">Save Job</button>
                             </form>
                         <% } %>
                     <% } %>
 
-                    <a href="/joblist" class="btn btn-secondary">
-                        Back to Jobs
-                    </a>
+                    <a href="/joblist" class="btn btn-secondary">Back to Jobs</a>
                 </div>
             </div>
         </div>

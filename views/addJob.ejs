@@ -64,20 +64,12 @@
                             %>
 
                             <div class="mb-3">
-                                <label for="category" class="form-label">
-                                    Category
-                                </label>
+                                <label for="category" class="form-label">Category</label>
 
-                                <select
-                                    id="category"
-                                    name="category"
-                                    class="form-select"
-                                    onchange="toggleOtherCategory()"
-                                    required>
+                                <select id="category" name="category" class="form-select"
+                                    onchange="toggleOtherCategory()" required>
 
-                                    <option value="">
-                                        Select an industry
-                                    </option>
+                                    <option value="">Select an industry</option>
 
                                     <% for (let i = 0; i < jobCategories.length; i++) { %>
                                         <option value="<%= jobCategories[i] %>">
@@ -85,23 +77,14 @@
                                         </option>
                                     <% } %>
 
-                                    <option value="Others">
-                                        Others
-                                    </option>
+                                    <option value="Others">Others</option>
                                 </select>
 
                                 <div id="otherCategoryContainer" class="mt-3 d-none">
-                                    <label for="otherCategory" class="form-label">
-                                        Other Category
-                                    </label>
+                                    <label for="otherCategory" class="form-label">Other Category</label>
 
-                                    <input
-                                        type="text"
-                                        id="otherCategory"
-                                        name="otherCategory"
-                                        class="form-control"
-                                        maxlength="50"
-                                        placeholder="Enter the industry">
+                                    <input type="text" id="otherCategory" name="otherCategory" class="form-control"
+                                        maxlength="50" placeholder="Enter the industry">
                                 </div>
                             </div>
 
@@ -121,12 +104,8 @@
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-worklah">
-                                    Add Job
-                                </button>
-                                <a href="/joblist" class="btn btn-secondary">
-                                    Cancel
-                                </a>
+                                <button type="submit" class="btn btn-worklah">Add Job</button>
+                                <a href="/joblist" class="btn btn-secondary">Cancel</a>
                             </div>
                         </form>
                     </div>

@@ -47,23 +47,13 @@
                             Your saved profile resume will be attached to
                             this application.
 
-                            <a
-                                href="/profile/resume"
-                                class="alert-link">
-                                View Resume
-                            </a>
+                            <a href="/profile/resume" class="alert-link">View Resume</a>
                         </div>
 
-                        <form
-                            action="/job/<%= job.id %>/apply"
-                            method="POST">
+                        <form action="/job/<%= job.id %>/apply" method="POST">
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-worklah">
-                                    Submit Application
-                                </button>
-                                <a href="/joblist" class="btn btn-secondary">
-                                    Cancel
-                                </a>
+                                <button type="submit" class="btn btn-worklah">Submit Application</button>
+                                <a href="/joblist" class="btn btn-secondary">Cancel</a>
                             </div>
                         </form>
                     </div>
