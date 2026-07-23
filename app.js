@@ -354,66 +354,6 @@ app.get('/logout', (req, res) => {
     res.redirect('/login');
 });
 
-    if (!username || !email || !password || !address || !contact) {
-        return res.status(400).send('All fields are required.');
-    }
-    if (password.length < 6) {
-        req.flash('error', 'Password should be at least 6 or more characters long');
-        req.flash('formData', req.body);
-        return res.redirect('/register');
-    }
-    next();
-
-
-app.post('/register', validateRegistration, (req, res) => {
-    const { username, email, password, address, contact, role } = req.body;
-
-    const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
-    db.query(sql, [username, email, password, address, contact, role], (err, result) => {
-        if (err) throw err;
-        req.flash('success', 'Registration successful! Please log in.');
-        res.redirect('/login');
-    });
-});
-
-app.get('/login', (req, res) => {
-    res.render('login', {
-        messages: req.flash('success'),
-        errors: req.flash('error')
-    });
-});
-
-app.post('/login', (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        req.flash('error', 'All fields are required.');
-        return res.redirect('/login');
-    }
-
-    const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
-    db.query(sql, [email, password], (err, results) => {
-        if (err) throw err;
-
-        if (results.length > 0) {
-            req.session.user = results[0];
-            req.flash('success', 'Login successful!');
-            if (req.session.user.role === 'admin') {
-                res.redirect('/admin');
-            } else {
-                res.redirect('/joblist');
-            }
-        } else {
-            req.flash('error', 'Invalid email or password.');
-            res.redirect('/login');
-        }
-    });
-});
-
-app.get('/admin', checkAuthenticated, checkAdmin, (req, res) => {
-    res.render('admin', { user: req.session.user });
-});
-
 // Display the logged-in student's profile
 app.get('/profile', checkAuthenticated, checkStudent, (req, res) => {
     const studentId = req.session.user.id;
@@ -726,11 +666,6 @@ app.get('/profile/resume', checkAuthenticated, checkStudent, (req, res) => {
 
         res.download(resumePath);
     });
-});
-
-app.get('/logout', (req, res) => {
-    req.session.destroy();
-    res.redirect('/login');
 });
 
 // Define route (Leonard)
