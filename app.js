@@ -301,7 +301,8 @@ const validateRegistration = (req, res, next) => {
 };
 
 app.post('/register', validateRegistration, (req, res) => {
-    const { username, email, password, address, contact, role } = req.body;
+    const { username, email, password, address, contact } = req.body;
+    const role = 'student';
 
     const sql = 'INSERT INTO users (username, email, password, address, contact, role) VALUES (?, ?, SHA1(?), ?, ?, ?)';
     db.query(sql, [username, email, password, address, contact, role], (err, result) => {
@@ -333,7 +334,11 @@ app.post('/login', (req, res) => {
         if (results.length > 0) {
             req.session.user = results[0];
             req.flash('success', 'Login successful!');
-            res.redirect('/dashboard');
+            if (req.session.user.role === 'admin') {
+                res.redirect('/admin');
+            } else {
+                res.redirect('/joblist');
+            }
         } else {
             req.flash('error', 'Invalid email or password.');
             res.redirect('/login');
@@ -342,7 +347,11 @@ app.post('/login', (req, res) => {
 });
 
 app.get('/dashboard', checkAuthenticated, (req, res) => {
-    res.render('dashboard', { user: req.session.user });
+    if (req.session.user.role === 'admin') {
+        return res.redirect('/admin');
+    }
+
+    res.redirect('/joblist');
 });
 
 app.get('/admin', checkAuthenticated, checkAdmin, (req, res) => {
@@ -1671,11 +1680,19 @@ app.post('/addjob', checkAuthenticated, checkAdmin, (req, res) => {
         title,
         company,
         description,
-        category,
         pay,
         location,
         deadline
     } = req.body;
+
+    let category = req.body.category;
+
+    // Use the custom value when Others is selected
+    if (category === 'Others') {
+        category = req.body.otherCategory
+            ? req.body.otherCategory.trim()
+            : '';
+    }
 
     // Ensure the required job information was entered
     if (!title || !company || !description || !category || !pay || !deadline) {
@@ -1741,11 +1758,19 @@ app.post('/job/:id/edit', checkAuthenticated, checkAdmin, (req, res) => {
         title,
         company,
         description,
-        category,
         pay,
         location,
         deadline
     } = req.body;
+
+    let category = req.body.category;
+
+    // Use the custom value when Others is selected
+    if (category === 'Others') {
+        category = req.body.otherCategory
+            ? req.body.otherCategory.trim()
+            : '';
+    }
 
     // Ensure the required job information was entered
     if (!title || !company || !description || !category || !pay || !deadline) {

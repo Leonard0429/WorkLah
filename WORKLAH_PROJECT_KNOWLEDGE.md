@@ -138,7 +138,7 @@ The UI hides controls that do not match the role, but the important protection i
 |---|---|---|---|
 | `views/index.ejs` | Everyone; `user`, success messages | Landing page. Changes its greeting/actions when a session user exists. | Leonard: landing/view integration |
 | `views/login.ejs` | Logged-out users; success/errors | Posts email and password to `/login`. Displays registration success or login errors. | Xanthus |
-| `views/register.ejs` | Logged-out users; errors and previous form data | Collects username, email, password, address, contact and current role selection; posts to `/register`. | Xanthus |
+| `views/register.ejs` | Logged-out users; errors and previous form data | Collects username, email, password, address and contact; posts to `/register`. Public registration always creates a student account. | Xanthus |
 | `views/admin.ejs` | Admin; session `user` | Admin landing page with account information and links to jobs/applications. | Xanthus, with shared UI integration |
 | `views/profile.ejs` | Student; profile and file-availability flags | Shows read-only identity, editable address/contact, reusable resume and separate profile-picture upload. | Team-integrated enhancement - owner to confirm |
 | `views/jobList.ejs` | Student/admin; jobs and filter state | Displays responsive job cards. Students see Apply/Save; admins see Add/Edit/Delete. Includes Jun Yi's GET search/filter/sort form. | Leonard display, Jun Yi finding tools, CRUD controls integrated from Bryan/Nissi/Jomond |
@@ -202,7 +202,7 @@ The live database confirms foreign keys from `applications` and `bookmarks` to u
 | `posted_by` | ID of the administrator who created it |
 | `created_at` | Creation time |
 
-There is deliberately no job-status column. A job becomes unavailable to students when at least one related application has status `accepted`.
+The shared database still contains a legacy job `status` column, but the current application does not use it. A job becomes unavailable to students when at least one related application has status `accepted`.
 
 ### 5.4 `applications`
 
@@ -278,7 +278,7 @@ const checkAdmin = (req, res, next) => {
 
 ### 6.4 Complete route reference
 
-There are 29 current routes.
+There are 30 current routes.
 
 | Method and route | Access/middleware | Main input and operation | Result | Primary ownership |
 |---|---|---|---|---|
@@ -288,6 +288,7 @@ There are 29 current routes.
 | `GET /login` | Public | Reads flash messages | Renders `login` | Xanthus |
 | `POST /login` | Public | Email/password; `SELECT users` | Creates session; admin → `/admin`, student → `/joblist` | Xanthus |
 | `GET /admin` | Authenticated admin | Session user | Renders `admin` | Xanthus |
+| `GET /dashboard` | Authenticated | Session role | Compatibility redirect: admin → `/admin`, student → `/joblist` | Xanthus/Leonard integration |
 | `GET /profile` | Authenticated student | `SELECT users`; checks private files | Renders `profile` | Team enhancement; access integration with Xanthus |
 | `POST /profile` | Authenticated student; resume upload | Address/contact/optional PDF; `SELECT` then `UPDATE users` | Replaces profile data/resume | Team enhancement - owner to confirm |
 | `POST /profile/picture` | Authenticated student; image upload | JPG/PNG; `SELECT` then `UPDATE users` | Replaces old picture | Team enhancement - owner to confirm |
@@ -631,11 +632,10 @@ Every member must answer the journal's final confidence/declaration question hon
 
 ## 9. Known Issues and Future Improvements
 
-These are documentation findings, not changes made by this guide.
+These are documentation findings, not changes made by this guide. Public registration has already been corrected to create student accounts only.
 
 | Priority | Current issue | Why it matters | Recommended future change |
 |---|---|---|---|
-| Critical | Public registration currently accepts a selected `admin` role | Anyone could create an administrator account | Force public registrations to `student`; create admins through a controlled process |
 | Critical | Database credentials and session secret are hard-coded | Secrets may leak through source control | Use environment variables and rotate exposed values |
 | High | Passwords use SHA-1 | SHA-1 is not suitable password hashing | Use `bcrypt`/`argon2` with per-password salts |
 | High | Default in-memory session store | Sessions disappear on restart and do not scale | Use a persistent MySQL/Redis session store |
@@ -702,4 +702,3 @@ When using this file as AI context:
 7. Attribute only verified primary ownership; label later work **owner to confirm**.
 8. Never include secret values in generated documentation or code examples.
 9. Explain the approach and trade-offs so the team can present the work without depending on AI.
-

@@ -54,14 +54,6 @@
                         <% if (formData && formData.contact) { %> value="<%= formData.contact %>" <% } else { %> value="" <% } %>>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="role" class="form-label">Role:</label>
-                        <select id="role" name="role" class="form-select" required>
-                            <option value="student" <% if (formData && formData.role === 'student') { %> selected <% } %>>Student</option>
-                            <option value="admin" <% if (formData && formData.role === 'admin') { %> selected <% } %>>Admin</option>
-                        </select>
-                    </div>
-
                     <button type="submit" class="btn btn-worklah">
                         Register
                     </button>
